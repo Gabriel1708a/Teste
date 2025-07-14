@@ -82,8 +82,8 @@ class WhatsAppBot {
         this.commands.set('!fechargp', groupScheduleCommand.scheduleClose);
         this.commands.set('!afgp', groupScheduleCommand.cancelSchedule);
         this.commands.set('!sorteio', sorteioCommand);
-        this.commands.set('!horarios', horariosCommand.sendHorarios);
-        this.commands.set('!horapg', horariosCommand.toggleAutoSend);
+        this.commands.set('!horarios', horariosCommand.execute);
+        this.commands.set('!horapg', horariosCommand.toggleAutoHorarios);
         this.commands.set('!addhorapg', horariosCommand.setInterval);
         this.commands.set('!banextremo', antilinkCommand.banExtremo);
         this.commands.set('!banlinkgp', antilinkCommand.banLinkGp);
@@ -201,7 +201,7 @@ class WhatsAppBot {
         await adsCommand.initializeAds(this.client);
         
         // Inicializar horários pagantes automáticos
-        await horariosCommand.initializeAutoSend(this.client);
+        await horariosCommand.initializeAutoHorarios(this.client);
         
         // Inicializar agendamentos de grupo
         await groupScheduleCommand.initializeSchedules(this.client);
