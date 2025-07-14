@@ -123,7 +123,7 @@ const sorteio2Command = async (client, message, args) => {
 };
 
 /**
- * Configura listener de reações para a mensagem do sorteio
+ * Configura listener de reações para a mensagem do sorteio - VERSÃO CORRIGIDA
  * @param {Client} client - Cliente WhatsApp
  * @param {Message} sorteioMessage - Mensagem do sorteio
  * @param {Object} sorteioData - Dados do sorteio
@@ -131,94 +131,64 @@ const sorteio2Command = async (client, message, args) => {
 const setupReactionListener = (client, sorteioMessage, sorteioData) => {
     console.log(`🔧 Configurando listener de reações para sorteio - MessageID: ${sorteioMessage.id._serialized}`);
 
-    // Listener para capturar reações
+    // MÉTODO 1: Listener de reações direto (primary)
     const reactionHandler = async (reaction) => {
         try {
-            console.log(`🔍 Reação detectada:`, {
-                msgId: reaction.msgId?._serialized || reaction.msgId,
-                emoji: reaction.emoji,
-                senderId: reaction.senderId,
-                sorteioMsgId: sorteioMessage.id._serialized
-            });
-
-            // Verificar se a reação é para a mensagem do sorteio
-            const reactionMsgId = reaction.msgId?._serialized || reaction.msgId;
-            if (reactionMsgId !== sorteioMessage.id._serialized) {
-                console.log(`🔍 Reação não é para mensagem do sorteio`);
-                return;
-            }
-
-            // Verificar se o sorteio ainda está ativo
-            if (!activeSorteios2.has(sorteioData.groupId)) {
-                console.log(`🔍 Sorteio não está mais ativo`);
-                return;
-            }
-
-            const currentSorteio = activeSorteios2.get(sorteioData.groupId);
+            // Melhor estrutura de debug
+            const debugInfo = {
+                reactionMsgId: reaction.msgId?._serialized || reaction.msgId || 'undefined',
+                expectedMsgId: sorteioMessage.id._serialized,
+                senderId: reaction.senderId || 'undefined', 
+                emoji: reaction.emoji || 'undefined',
+                reactionObj: reaction
+            };
             
-            // Verificar se ainda está dentro do tempo
-            if (Date.now() > currentSorteio.endTime) {
-                console.log(`🔍 Sorteio já expirado`);
+            console.log(`🔍 Reação detectada (MÉTODO 1):`, debugInfo);
+
+            // Verificações múltiplas de ID da mensagem 
+            const reactionMsgId = reaction.msgId?._serialized || reaction.msgId;
+            const expectedMsgId = sorteioMessage.id._serialized;
+            
+            // Comparação flexível de IDs
+            const isTargetMessage = (
+                reactionMsgId === expectedMsgId ||
+                (reaction.msgId && reaction.msgId.toString() === expectedMsgId) ||
+                (reaction.message && reaction.message.id._serialized === expectedMsgId)
+            );
+
+            if (!isTargetMessage) {
+                console.log(`🔍 Reação não é para mensagem do sorteio (${reactionMsgId} !== ${expectedMsgId})`);
                 return;
             }
 
-            // Pegar informações do usuário que reagiu
-            let contact = null;
-            let userId = reaction.senderId;
-            let userNumber = 'Número não disponível';
-            let userName = 'Nome não disponível';
-
-            try {
-                if (userId) {
-                    contact = await client.getContactById(userId);
-                    userNumber = contact ? contact.number : userId;
-                    userName = contact ? (contact.pushname || contact.name || contact.number) : userNumber;
-                }
-            } catch (contactError) {
-                console.log(`⚠️ Erro ao obter contato: ${contactError.message}`);
-                userNumber = userId || 'ID não disponível';
-                userName = userNumber;
-            }
-
-            // Verificar se o usuário já participou
-            if (currentSorteio.participantes.has(userId)) {
-                console.log(`🔄 Usuário já participando - ${userName} (${userNumber}) - Reação: ${reaction.emoji}`);
-                return;
-            }
-
-            // Adicionar participante
-            currentSorteio.participantes.set(userId, {
-                number: userNumber,
-                name: userName,
-                timestamp: Date.now(),
-                emoji: reaction.emoji
-            });
-
-            // Log detalhado no terminal
-            console.log(`🎉 NOVA PARTICIPAÇÃO NO SORTEIO2!`);
-            console.log(`   👤 Nome: ${userName}`);
-            console.log(`   📱 Número: ${userNumber}`);
-            console.log(`   😀 Emoji: ${reaction.emoji}`);
-            console.log(`   🕐 Horário: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`);
-            console.log(`   👥 Total participantes: ${currentSorteio.participantes.size}`);
-            console.log(`   🎲 Sorteio: ${currentSorteio.premio}`);
-            console.log(`   ─────────────────────────────────────────────────`);
-
-            // Atualizar sorteio ativo
-            activeSorteios2.set(sorteioData.groupId, currentSorteio);
+            console.log(`✅ Reação é para a mensagem do sorteio!`);
+            await processarParticipacao(client, reaction, sorteioData);
 
         } catch (error) {
-            console.error('Erro ao processar reação do sorteio2:', error);
+            console.error('❌ Erro no reactionHandler:', error);
         }
     };
 
-    // Registrar múltiplos listeners para debug
-    client.on('message_reaction', reactionHandler);
-    
-    // FALLBACK: Monitorar mensagem do sorteio para detectar reações
+    // MÉTODO 2: Listener alternativo message_reaction (fallback)
+    const messageReactionHandler = async (reaction) => {
+        try {
+            console.log(`🔍 Reação detectada (MÉTODO 2 - message_reaction):`, {
+                msgId: reaction.msgId,
+                senderId: reaction.senderId,
+                emoji: reaction.emoji
+            });
+
+            await processarParticipacao(client, reaction, sorteioData);
+        } catch (error) {
+            console.error('❌ Erro no messageReactionHandler:', error);
+        }
+    };
+
+    // MÉTODO 3: Polling de reações (fallback robusto)
     const pollReactionsInterval = setInterval(async () => {
         try {
             if (!activeSorteios2.has(sorteioData.groupId)) {
+                console.log(`🔍 POLLING: Sorteio não ativo, parando polling`);
                 clearInterval(pollReactionsInterval);
                 return;
             }
@@ -226,78 +196,161 @@ const setupReactionListener = (client, sorteioMessage, sorteioData) => {
             const currentSorteio = activeSorteios2.get(sorteioData.groupId);
             
             if (Date.now() > currentSorteio.endTime) {
+                console.log(`🔍 POLLING: Sorteio expirado, parando polling`);
                 clearInterval(pollReactionsInterval);
                 return;
             }
 
-            // Buscar a mensagem e verificar reações
+            // Buscar mensagem e verificar reações via polling
             const chat = await client.getChatById(sorteioData.groupId);
-            const messages = await chat.fetchMessages({ limit: 50 });
+            const messages = await chat.fetchMessages({ limit: 30 });
             
-            const sorteioMsg = messages.find(msg => msg.id._serialized === sorteioMessage.id._serialized);
+            const sorteioMsg = messages.find(msg => 
+                msg.id._serialized === sorteioMessage.id._serialized
+            );
             
             if (sorteioMsg && sorteioMsg.hasReaction) {
-                console.log(`🔍 FALLBACK: Mensagem do sorteio tem reações!`);
+                console.log(`🔍 POLLING: Mensagem tem reações! Processando...`);
                 
                 try {
                     const reactions = await sorteioMsg.getReactions();
-                    console.log(`🔍 FALLBACK: Reações encontradas:`, reactions);
                     
                     for (const reactionList of reactions) {
+                        const emoji = reactionList.id;
+                        
+                        console.log(`🔍 POLLING: Processando emoji ${emoji} com ${reactionList.senders.length} remetentes`);
+                        
                         for (const sender of reactionList.senders) {
                             const userId = sender.id._serialized;
                             
                             if (!currentSorteio.participantes.has(userId)) {
-                                let contact = null;
-                                let userNumber = 'Número não disponível';
-                                let userName = 'Nome não disponível';
-
-                                try {
-                                    contact = await client.getContactById(userId);
-                                    userNumber = contact ? contact.number : userId;
-                                    userName = contact ? (contact.pushname || contact.name || contact.number) : userNumber;
-                                } catch (contactError) {
-                                    console.log(`⚠️ FALLBACK: Erro ao obter contato: ${contactError.message}`);
-                                    userNumber = userId;
-                                    userName = userNumber;
-                                }
-
-                                // Adicionar participante
-                                currentSorteio.participantes.set(userId, {
-                                    number: userNumber,
-                                    name: userName,
-                                    timestamp: Date.now(),
-                                    emoji: reactionList.id
-                                });
-
-                                // Log detalhado
-                                console.log(`🎉 FALLBACK: NOVA PARTICIPAÇÃO NO SORTEIO2!`);
-                                console.log(`   👤 Nome: ${userName}`);
-                                console.log(`   📱 Número: ${userNumber}`);
-                                console.log(`   😀 Emoji: ${reactionList.id}`);
-                                console.log(`   🕐 Horário: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`);
-                                console.log(`   👥 Total participantes: ${currentSorteio.participantes.size}`);
-                                console.log(`   🎲 Sorteio: ${currentSorteio.premio}`);
-                                console.log(`   ─────────────────────────────────────────────────`);
-
-                                // Atualizar sorteio ativo
-                                activeSorteios2.set(sorteioData.groupId, currentSorteio);
+                                console.log(`🔍 POLLING: Novo participante detectado: ${userId}`);
+                                
+                                // Simular objeto de reação para processamento
+                                const simulatedReaction = {
+                                    msgId: sorteioMessage.id._serialized,
+                                    senderId: userId,
+                                    emoji: emoji
+                                };
+                                
+                                await processarParticipacao(client, simulatedReaction, sorteioData, true);
                             }
                         }
                     }
                 } catch (reactionsError) {
-                    console.log(`⚠️ FALLBACK: Erro ao obter reações: ${reactionsError.message}`);
+                    console.log(`⚠️ POLLING: Erro ao obter reações: ${reactionsError.message}`);
                 }
             }
             
         } catch (error) {
-            console.error('Erro no fallback de reações:', error);
+            console.error('❌ Erro no polling de reações:', error);
         }
-    }, 3000); // Verificar a cada 3 segundos
+    }, 5000); // Verificar a cada 5 segundos
 
-    // Armazenar referências dos handlers para poder remover depois
+    // Registrar listeners
+    try {
+        client.on('message_reaction', reactionHandler);
+        client.on('reaction', reactionHandler); // Tentar evento alternativo
+        console.log(`🔧 Listeners de reação registrados`);
+    } catch (listenerError) {
+        console.error('❌ Erro ao registrar listeners:', listenerError);
+    }
+
+    // Armazenar referências para limpeza
     sorteioData.reactionHandler = reactionHandler;
+    sorteioData.messageReactionHandler = messageReactionHandler;
     sorteioData.pollReactionsInterval = pollReactionsInterval;
+};
+
+/**
+ * Processa uma participação no sorteio - FUNÇÃO SEPARADA E MELHORADA
+ * @param {Client} client - Cliente WhatsApp
+ * @param {Object} reaction - Objeto da reação
+ * @param {Object} sorteioData - Dados do sorteio
+ * @param {boolean} isPolling - Se veio do polling (opcional)
+ */
+const processarParticipacao = async (client, reaction, sorteioData, isPolling = false) => {
+    try {
+        // Verificar se o sorteio ainda está ativo
+        if (!activeSorteios2.has(sorteioData.groupId)) {
+            console.log(`🔍 Sorteio não está mais ativo`);
+            return;
+        }
+
+        const currentSorteio = activeSorteios2.get(sorteioData.groupId);
+        
+        // Verificar se ainda está dentro do tempo
+        if (Date.now() > currentSorteio.endTime) {
+            console.log(`🔍 Sorteio já expirado`);
+            return;
+        }
+
+        // Extrair informações do usuário
+        const userId = reaction.senderId;
+        const emoji = reaction.emoji || '❤️'; // Emoji padrão se undefined
+        
+        if (!userId) {
+            console.log(`⚠️ SenderId não encontrado na reação`);
+            return;
+        }
+
+        // Verificar se o usuário já participou
+        if (currentSorteio.participantes.has(userId)) {
+            console.log(`🔄 Usuário já participando - ${userId} - Emoji: ${emoji}`);
+            return;
+        }
+
+        // Obter informações do contato
+        let contact = null;
+        let userNumber = 'Número não disponível';
+        let userName = 'Nome não disponível';
+
+        try {
+            contact = await client.getContactById(userId);
+            userNumber = contact ? contact.number : userId.replace('@c.us', '');
+            userName = contact ? (contact.pushname || contact.name || contact.number) : userNumber;
+        } catch (contactError) {
+            console.log(`⚠️ Erro ao obter contato: ${contactError.message}`);
+            userNumber = userId.replace('@c.us', '');
+            userName = userNumber;
+        }
+
+        // Adicionar participante
+        currentSorteio.participantes.set(userId, {
+            number: userNumber,
+            name: userName,
+            timestamp: Date.now(),
+            emoji: emoji
+        });
+
+        // Log detalhado de sucesso
+        const method = isPolling ? 'POLLING' : 'LISTENER';
+        console.log(`🎉 ${method}: NOVA PARTICIPAÇÃO NO SORTEIO2!`);
+        console.log(`   👤 Nome: ${userName}`);
+        console.log(`   📱 Número: ${userNumber}`);
+        console.log(`   😀 Emoji: ${emoji}`);
+        console.log(`   🕐 Horário: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`);
+        console.log(`   👥 Total participantes: ${currentSorteio.participantes.size}`);
+        console.log(`   🎲 Sorteio: ${currentSorteio.premio}`);
+        console.log(`   ─────────────────────────────────────────────────`);
+
+        // Atualizar sorteio ativo
+        activeSorteios2.set(sorteioData.groupId, currentSorteio);
+
+        // Feedback opcional no grupo (a cada 5 participantes)
+        if (currentSorteio.participantes.size % 5 === 0) {
+            try {
+                await client.sendMessage(sorteioData.groupId, 
+                    `🎲 Sorteio em andamento!\n👥 Participantes: ${currentSorteio.participantes.size}\n🏆 Prêmio: ${currentSorteio.premio}`
+                );
+            } catch (sendError) {
+                console.log(`⚠️ Erro ao enviar update de participantes: ${sendError.message}`);
+            }
+        }
+
+    } catch (error) {
+        console.error('❌ Erro ao processar participação:', error);
+    }
 };
 
 /**
@@ -317,12 +370,13 @@ const finalizarSorteio2 = async (client, groupId) => {
         console.log(`🏁 Finalizando sorteio2 - Grupo: ${groupId} - Prêmio: ${sorteio.premio}`);
         console.log(`👥 Total de participantes: ${participantes.length}`);
 
-        // Remover listener de reações e polling
+        // Remover todos os listeners e intervalos
         if (sorteio.reactionHandler) {
             client.off('message_reaction', sorteio.reactionHandler);
-            console.log(`🔧 Listener de reações removido`);
+            client.off('reaction', sorteio.reactionHandler); // Remover ambos os eventos
+            console.log(`🔧 Listeners de reações removidos`);
         }
-        
+
         if (sorteio.pollReactionsInterval) {
             clearInterval(sorteio.pollReactionsInterval);
             console.log(`🔧 Polling de reações removido`);
@@ -386,6 +440,9 @@ const finalizarSorteio2 = async (client, groupId) => {
             const sorteio = activeSorteios2.get(groupId);
             if (sorteio.reactionHandler) {
                 client.off('message_reaction', sorteio.reactionHandler);
+            }
+            if (sorteio.messageReactionHandler) {
+                client.off('reaction', sorteio.messageReactionHandler);
             }
             if (sorteio.pollReactionsInterval) {
                 clearInterval(sorteio.pollReactionsInterval);
