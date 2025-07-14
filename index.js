@@ -15,6 +15,12 @@ const sorteioCommand = require('./commands/sorteio');
 const horariosCommand = require('./commands/horarios');
 const antilinkCommand = require('./commands/antilink');
 
+// ========================================
+// 📱 CONFIGURE SEU NÚMERO AQUI:
+const MEU_NUMERO_WHATSAPP = '5511999999999'; // ← SUBSTITUA PELO SEU NÚMERO
+// Formato: 55 + DDD + número (ex: 5511987654321)
+// ========================================
+
 class WhatsAppBot {
     constructor() {
         this.client = new Client({
@@ -39,6 +45,27 @@ class WhatsAppBot {
         this.commands = new Map();
         this.setupCommands();
         this.setupEventListeners();
+    }
+
+    async requestPairingCode(phoneNumber) {
+        try {
+            console.log(`🔑 Solicitando pairing code para ${phoneNumber}...`);
+            const code = await this.client.requestPairingCode(phoneNumber);
+            console.log('');
+            console.log('🎯 ================================');
+            console.log('🔑 PAIRING CODE:', code);
+            console.log('🎯 ================================');
+            console.log('📱 COMO USAR:');
+            console.log('1. Abra o WhatsApp no seu celular');
+            console.log('2. Vá em: Configurações > Aparelhos conectados');
+            console.log('3. Toque em: Conectar um aparelho');
+            console.log('4. Digite o código:', code);
+            console.log('🎯 ================================');
+            console.log('');
+            return code;
+        } catch (error) {
+            console.error('❌ Erro ao solicitar pairing code:', error);
+        }
     }
 
     setupCommands() {
@@ -66,8 +93,9 @@ class WhatsAppBot {
     }
 
     setupEventListeners() {
-        this.client.on('qr', (qr) => {
-            console.log('📱 QR Code recebido (use pairing code se possível)');
+        this.client.on('qr', async (qr) => {
+            console.log('📱 Gerando pairing code automaticamente...');
+            await this.requestPairingCode(MEU_NUMERO_WHATSAPP);
         });
 
         this.client.on('ready', () => {
@@ -195,6 +223,7 @@ class WhatsAppBot {
             console.log('📁 Sessão encontrada, conectando...');
         } else {
             console.log('🆕 Nova sessão, será necessário parear dispositivo');
+            console.log('📱 Número configurado:', MEU_NUMERO_WHATSAPP);
         }
 
         await this.client.initialize();

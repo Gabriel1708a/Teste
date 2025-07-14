@@ -71,14 +71,31 @@ npm start
 
 ### 4. Conecte ao WhatsApp
 
-#### Opção A: Pairing Code (Recomendado)
-1. No WhatsApp do celular: **Configurações** > **Aparelhos conectados**
-2. Toque em **Conectar um aparelho**
-3. Digite o código de 8 dígitos que aparecerá no console
+#### ⚡ Pairing Code Automático (Recomendado)
+
+**ANTES de iniciar o bot:**
+
+1. **Configure seu número** no arquivo `index.js` (linha 11):
+```javascript
+const MEU_NUMERO_WHATSAPP = '5511987654321'; // ← SEU NÚMERO AQUI
+```
+
+2. **Formato:** `55` + `DDD` + `número` (ex: `5511987654321`)
+
+3. **Inicie o bot:**
+```bash
+npm start
+```
+
+4. **O pairing code aparecerá automaticamente:**
+```
+🔑 PAIRING CODE: A1B2C3D4
+```
+
+5. **No WhatsApp:** **Configurações** > **Aparelhos conectados** > **Conectar aparelho** > Digite o código
 
 #### Opção B: QR Code (Fallback)
-1. Escaneie o QR Code que aparecer no console
-2. Aguarde a conexão ser estabelecida
+Se o pairing code falhar, escaneie o QR Code que aparecer
 
 ## 📁 Estrutura do Projeto
 
