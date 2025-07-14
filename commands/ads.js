@@ -50,11 +50,11 @@ const addAds = async (client, message, args) => {
         const truncatedMessage = truncateString(adMessage, 50);
 
         await message.reply(
-            `🗞️ Anúncio criado com sucesso! 📌\n\n` +
-            `🆔 ID: ${adId}\n` +
-            `📝 Mensagem: ${truncatedMessage}\n` +
-            `🔁 Intervalo: ${formattedInterval}\n\n` +
-            `✅ O anúncio será enviado automaticamente!`
+            `Anúncio criado com sucesso!\n\n` +
+            `ID: ${adId}\n` +
+            `Mensagem: ${truncatedMessage}\n` +
+            `Intervalo: ${formattedInterval}\n\n` +
+            `O anúncio será enviado automaticamente!`
         );
 
         console.log(`📌 Anúncio criado - Grupo: ${groupId} - ID: ${adId}`);
@@ -171,7 +171,7 @@ const startAdInterval = async (client, groupId, adId, message, intervalMs) => {
     // Criar novo intervalo
     const interval = setInterval(async () => {
         try {
-            await client.sendMessage(groupId, `🗞️ ${message} 📌`);
+            await client.sendMessage(groupId, message);
             
             // Atualizar último envio no banco
             const ads = await loadAds();

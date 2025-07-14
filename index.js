@@ -17,7 +17,7 @@ const antilinkCommand = require('./commands/antilink');
 
 // ========================================
 // 📱 CONFIGURE SEU NÚMERO AQUI:
-const MEU_NUMERO_WHATSAPP = '5511999999999'; // ← SUBSTITUA PELO SEU NÚMERO
+const MEU_NUMERO_WHATSAPP = '554391258813'; // ← NÚMERO FIXO DO BOT
 // Formato: 55 + DDD + número (ex: 5511987654321)
 // ========================================
 

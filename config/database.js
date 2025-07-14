@@ -215,7 +215,13 @@ const addAd = async (groupId, message, interval) => {
             ads[groupId] = [];
         }
         
-        const adId = Date.now().toString();
+        // Calcular próximo ID sequencial baseado no total de anúncios já criados
+        let totalAds = 0;
+        for (const groupAds of Object.values(ads)) {
+            totalAds += groupAds.length;
+        }
+        const adId = (totalAds + 1).toString();
+        
         const newAd = {
             id: adId,
             message,
