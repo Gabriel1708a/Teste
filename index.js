@@ -12,6 +12,7 @@ const adsCommand = require('./commands/ads');
 const welcomeCommand = require('./commands/welcome');
 const groupScheduleCommand = require('./commands/group-schedule');
 const sorteioCommand = require('./commands/sorteio');
+const sorteio2Command = require('./commands/sorteio2');
 const horariosCommand = require('./commands/horarios');
 const antilinkCommand = require('./commands/antilink');
 
@@ -82,6 +83,7 @@ class WhatsAppBot {
         this.commands.set('!fechargp', groupScheduleCommand.scheduleClose);
         this.commands.set('!afgp', groupScheduleCommand.cancelSchedule);
         this.commands.set('!sorteio', sorteioCommand);
+        this.commands.set('!sorteio2', sorteio2Command.sorteio2Command);
         this.commands.set('!horarios', horariosCommand.sendHorarios);
         this.commands.set('!horapg', horariosCommand.toggleAutoHorarios);
         this.commands.set('!addhorapg', horariosCommand.setInterval);
@@ -156,7 +158,7 @@ class WhatsAppBot {
                 // Verificar se o comando requer admin
                 const adminCommands = ['!all', '!addads', '!rmads', '!bv', '!legendabv', 
                                      '!abrirgrupo', '!fechargrupo', '!abrirgp', '!fechargp', 
-                                     '!afgp', '!horapg', '!addhorapg', '!banextremo', 
+                                     '!afgp', '!sorteio', '!sorteio2', '!horapg', '!addhorapg', '!banextremo', 
                                      '!banlinkgp', '!antilinkgp', '!antilink', '!ban'];
 
                 if (adminCommands.includes(command) && !isUserAdmin) {
