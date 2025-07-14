@@ -1,0 +1,22 @@
+{
+  "horarios": [
+    "08:30",
+    "09:15",
+    "10:45",
+    "11:30",
+    "13:20",
+    "14:15",
+    "15:45",
+    "16:30",
+    "18:20",
+    "19:15",
+    "20:45",
+    "21:30",
+    "22:20",
+    "23:15"
+  ],
+  "messages": [
+    "🍀 HORÁRIOS PAGANTES 💰\n\n🕐 Próximo horário: {horario}\n\n💸 Aposte com responsabilidade!\n🎰 Boa sorte a todos!",
+    "💰 DICA QUENTE! 🔥\n\n⏰ Horário: {horario}\n\n🍀 Este pode ser o seu momento da sorte!\n🎯 Não perca essa oportunidade!"
+  ]
+}
