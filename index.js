@@ -82,7 +82,7 @@ class WhatsAppBot {
         this.commands.set('!fechargp', groupScheduleCommand.scheduleClose);
         this.commands.set('!afgp', groupScheduleCommand.cancelSchedule);
         this.commands.set('!sorteio', sorteioCommand);
-        this.commands.set('!horarios', horariosCommand.execute);
+        this.commands.set('!horarios', horariosCommand.sendHorarios);
         this.commands.set('!horapg', horariosCommand.toggleAutoHorarios);
         this.commands.set('!addhorapg', horariosCommand.setInterval);
         this.commands.set('!banextremo', antilinkCommand.banExtremo);
